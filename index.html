@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+    
+        body {
+            background-color: #000000;
+            color: #FFFFFF;
+            text-align:center;
+            vertical-align: middle;
+        }
+        #canvas {
+            margin: 10px;
+            padding: 0px;
+        }
+    
+    </style>
+</head>
+<body>
+    
+
+    <canvas id="canvas"></canvas>
+    <br>
+    <input type="button" id="reset" value="Replay">
+    <label>Points:</label>
+    <label id="score">0</label>
+    <script src="blox.js"></script>
+
+
+
+    <script>
+            let canvas = document.getElementById('canvas');
+            canvas.addEventListener('click', click, false);
+            let c = canvas.getContext("2d");
+            let button = document.getElementById('reset');
+            button.addEventListener('click', init, false);
+            let scoreField = document.getElementById('score');
+
+            let COLORS = [
+                "purple", 
+                "blue", 
+                "green", 
+                "yellow", 
+                "orange", 
+                "red", 
+                "pink", 
+                "magenta", 
+                "brown", 
+                "cream"  
+            ];
+            let HEIGHT = 12;
+            let WIDTH = 8;
+            let BLOCK_SIZE = 40;
+            let NUMBER_OF_COLORS = 9;
+            let EMPTY = -1;
+
+            canvas.width = WIDTH * BLOCK_SIZE;
+            canvas.height = HEIGHT * BLOCK_SIZE;
+            let grid = [];
+            let valid = false;
+            let score = 0;
+
+            init();
+
+            function init() {
+                for (let i = 0; i < WIDTH; i++) {
+                    grid[i] = [];
+                    for (let j = 0; j < HEIGHT; j++) {
+                        grid[i][j] = Math.floor(Math.random() * (NUMBER_OF_COLORS));
+                    }
+                }
+                valid = true;
+                scoreField.innerHTML = score = 0;
+                draw();
+            }
+
+            function getCursorPosition(event) {
+                let mouseX;
+                let mouseY;
+                if (event.pageX || event.pageY) {
+                    mouseX = event.pageX;
+                    mouseY = event.pageY;
+                } else {
+                    mouseX = event.clientX + document.body.scrollLeft + document.documentElement.scrollLeft;
+                    mouseY = event.clientY + document.body.scrollTop + document.documentElement.scrollTop;
+                }
+                mouseX -= canvas.offsetLeft;
+                mouseY -= canvas.offsetTop;
+                let x = Math.floor(mouseX / BLOCK_SIZE);
+                let y = Math.floor(mouseY / BLOCK_SIZE);
+                y = HEIGHT - y - 1; 
+                return new Block(x, y);
+            }
+
+            function Block(x, y) {
+                this.x = x;
+                this.y = y;
+            }
+
+            function draw() {
+                c.fillStyle = "#000000";
+                c.fillRect(0, 0, canvas.width, canvas.height);
+                for (let i = 0; i < WIDTH; i++) {
+                    for (let j = grid[i].length - 1; j >= 0; j--) { 
+                        c.fillStyle = COLORS[grid[i][j]];
+                        c.fillRect(i * BLOCK_SIZE, (HEIGHT - j - 1) * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE); 
+                    }
+                }
+            }
+
+            function click(event) {
+                if (!valid) {
+                    return;
+                }
+                let block = getCursorPosition(event);
+                if (typeof grid[block.x][block.y] === 'undefined') {
+                    return;
+                }
+                let color = grid[block.x][block.y];
+                let r = remove(block.x, block.y, color);
+                if (r != 1) {
+                    empty();
+                    scoreField.innerHTML = score += r * r;
+                    draw();
+                    checkValidataion();
+                } else {
+                    grid[block.x][block.y] = color; 
+                }
+            }
+
+            function remove(x, y, color) {
+                let result = 0;
+                if (x < 0 || y < 0 || x >= WIDTH || y >= HEIGHT) { 
+                    return result;
+                }
+                if (grid[x][y] != color) { 
+                    return result;
+                }
+                grid[x][y] = EMPTY;
+
+                result += 1;
+                result += remove(x, y - 1, color);
+                result += remove(x, y + 1, color);
+                result += remove(x - 1, y, color);
+                result += remove(x + 1, y, color);
+                return result;
+            }
+
+            function empty() {
+                for (let i = 0; i < WIDTH; i++) {
+                    for (let j = grid[i].length - 1; j >= 0; j--) { 
+                        if (grid[i][j] === EMPTY) {
+                            grid[i].splice(j, 1);
+                        }
+                    }
+                }
+            }
+
+            function checkValidataion() {
+                for (let i = 0; i < WIDTH; i++) {
+                    for (let j = grid[i].length - 1; j >= 0; j--) {
+                        if (stillPlayable(i, j)) return;
+                    }
+                }
+                finish();
+            }
+
+            function finish() {
+                c.fillStyle = "rgba(90, 0, 0, 0.33)";
+                c.fillRect(0, 0, canvas.width, canvas.height);
+                valid = false;
+            }
+
+            function stillPlayable(x, y) {
+                return (
+                    (x > 0 && grid[x][y] === grid[x - 1][y]) ||
+                    (y > 0 && grid[x][y] === grid[x][y - 1]) ||
+                    (x < WIDTH - 1 && grid[x][y] === grid[x + 1][y]) ||
+                    (y < HEIGHT - 1 && grid[x][y] === grid[x][y + 1]));
+            }
+    </script>
+</body>
+</html>
